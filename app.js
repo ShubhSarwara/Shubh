@@ -249,10 +249,23 @@
     return [];
   }
 
-  // Pull cloud logs and merge into localStorage. Cloud wins for a date only
-  // if its updatedAt is newer than that date's last sync time (or there is
-  // no local copy yet). Returns the number of days merged, or -1 if the
-  // cloud could not be reached at all. Never throws.
+  // True when a day's log has at least one real transaction (an ID or an
+  // amount). A log with only an opening balance and empty rows counts as
+  // empty — opening the app on a fresh device creates exactly such a log,
+  // and it must never block the real cloud data from coming in.
+  function logHasTransactions(tableData) {
+    if (!Array.isArray(tableData)) return false;
+    return tableData.some(row => {
+      if (!Array.isArray(row)) return false;
+      return (row[2] || '').trim() !== '' || (row[4] || '').trim() !== '';
+    });
+  }
+
+  // Pull cloud logs and merge into localStorage. Cloud wins for a date when
+  // there is no local log yet, when the local log has no transactions, or
+  // when the cloud copy is newer than that date's last sync time. Returns
+  // the number of days merged, or -1 if the cloud could not be reached at
+  // all. Never throws.
   async function pullCloudLogs() {
     try {
       const logs = await fetchCloudLogs();
@@ -263,9 +276,14 @@
         if (!log.date || !Array.isArray(log.data)) return;
         const key = 'balanceSheetData_' + log.date;
         const localRaw = localStorage.getItem(key);
+        let localHasData = false;
+        if (localRaw) {
+          try { localHasData = logHasTransactions(JSON.parse(localRaw)); } catch (e) { localHasData = false; }
+        }
+        const cloudHasData = logHasTransactions(log.data);
         const lastSyncMs = meta[log.date] ? toMillis(meta[log.date]) : 0;
         const cloudIsNewer = !!meta[log.date] && log.updatedAtMs > 0 && log.updatedAtMs > lastSyncMs;
-        if (!localRaw || cloudIsNewer) {
+        if ((!localHasData && cloudHasData) || cloudIsNewer) {
           localStorage.setItem(key, JSON.stringify(log.data));
           meta[log.date] = new Date(log.updatedAtMs || Date.now()).toISOString();
           merged++;
@@ -279,7 +297,10 @@
     }
   }
 
-  // Push every local log, then pull and merge cloud logs. Never throws.
+  // Pull and merge cloud logs FIRST, then push every local log. Pull-first
+  // matters: on a device that only has an empty log for today, pushing
+  // first would overwrite the good cloud data with the empty log.
+  // Never throws.
   async function syncNow() {
     const apiBase = getApiBase();
     const useSheets = !!getSheetsUrl();
@@ -290,6 +311,7 @@
     }
     showToast('Syncing...');
     try {
+      const merged = await pullCloudLogs();
       const keys = [];
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
@@ -308,7 +330,6 @@
         // short breather between days.
         if (useSheets) await new Promise(r => setTimeout(r, 200));
       }
-      const merged = await pullCloudLogs();
       calculateAndSetInitialHighestBusiness();
       loadDataByDate(true);
       const pullFailed = merged < 0;
@@ -1750,7 +1771,7 @@
   // ===============================================
   // START: GLOBAL INITIALIZATION
   // ===============================================
-  window.addEventListener('DOMContentLoaded', () => {
+  window.addEventListener('DOMContentLoaded', async () => {
     // Generic Modal Close Logic
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
         overlay.addEventListener('click', (e) => {
@@ -1831,18 +1852,18 @@
     // Balance Sheet Initializers
     loadTheme();
     populateStaticFilters('search-year-filter', 'search-month-filter');
+
+    // Backend FIRST: initialise and pull cloud logs BEFORE loading today's
+    // log. On a fresh device, loading first would create an empty local log
+    // for today — and that empty log used to block the real cloud data from
+    // merging in. Failures never break local use.
+    initFirebase();
+    if (getSheetsUrl() || getApiBase() || cloudReady) showToast('Loading from cloud...');
+    const merged = await pullCloudLogs();
     calculateAndSetInitialHighestBusiness();
     loadDataByDate(true);
-
-    // Backend: initialise (local-only if nothing configured) and pull any
-    // newer cloud logs. Failures never break local use.
-    initFirebase();
-    pullCloudLogs().then(merged => {
-        if (merged > 0) {
-            calculateAndSetInitialHighestBusiness();
-            loadDataByDate(true);
-            showToast(merged + ' day(s) restored from cloud.');
-        }
-    });
+    if (merged > 0) {
+        showToast(merged + ' day(s) restored from cloud.');
+    }
 
   });
