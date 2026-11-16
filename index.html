@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Business Suite</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+  <!-- Firebase (compat SDK) for optional cloud sync. The app works fully offline on localStorage if no Firebase config is set. -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    
+    <div id="toast-notification"></div>
+
+    <div class="tab-container">
+        <button class="tab-link active" onclick="openTab(event, 'balanceSheet')">Balance Sheet</button>
+    </div>
+
+    <div id="balanceSheet" class="tab-content active">
+        <div class="top-bar">
+            <div class="icon-group">
+                <div class="icon-container" title="Search Transactions" onclick="toggleSearch()">🔍</div>
+                <div class="icon-container" title="Change Theme" onclick="cycleTheme()">🎨</div>
+                <div class="icon-container" id="theme-mode-toggle" title="Toggle Light/Dark Mode" onclick="toggleLightDarkMode()">☀️</div>
+            </div>
+            <div class="date-summary-group">
+            <div id="currentDateDisplay" class="date"></div>
+            <div id="monthlyBusiness" class="monthly-summary">
+                Monthly Business: 
+                <span id="monthlyBusinessValue">₹ 0</span> 
+                <span class="toggle-visibility" onclick="toggleBalanceVisibility('monthlyBusinessValue', this)">🙈</span>
+            </div>
+            <div id="monthlyTransactions" class="monthly-summary">Monthly Transactions: 0</div>
+            </div>
+        </div>
+
+        <div id="search-container">
+            <div id="search-controls">
+            <input type="text" id="search-input" placeholder="Search by ID or Amount...">
+            <select id="search-year-filter"></select>
+            <select id="search-month-filter"></select>
+            <select id="search-type-filter">
+                <option value="both" selected>Both Types</option>
+                <option value="AD">AD Type</option>
+                <option value="AC">AC Type</option>
+            </select>
+            <button id="perform-search-btn" onclick="performIdSearch()">ID Search</button>
+            <button id="amount-search-btn" onclick="performAmountSearch()">Amount Search</button>
+            <button id="clear-search-btn" onclick="clearSearch()">Clear</button>
+            </div>
+            <div id="search-results-summary"></div>
+            <div id="search-results"></div>
+        </div>
+
+        <div id="report-results-container">
+            <div id="report-results-header">
+                <div id="report-title-group"> <h3 id="report-title"></h3> </div>
+                <select id="report-type-filter" onchange="filterDisplayedReport()">
+                    <option value="both" selected>Both Types</option>
+                    <option value="AD">AD Type</option>
+                    <option value="AC">AC Type</option>
+                </select>
+                <button id="clear-report-btn" onclick="clearReportResults()">Clear Report</button>
+            </div>
+            <div id="report-results-summary"></div>
+            <div id="report-results-body"></div>
+        </div>
+
+        <div id="main-content">
+            <div class="summary-container">
+                <div class="summary-top-row">
+                    <div class="summary-main">
+                        <div class="total-business">
+                            <span id="businessLabel">Total Business:</span>
+                            <span id="totalBusinessValue">₹ 0</span>
+                        </div>
+                        <div class="current-balance" id="currentBalanceDisplay">
+                            Current Balance: 
+                            <span id="currentBalanceValue">₹ 0</span>
+                            <span class="toggle-visibility" onclick="toggleBalanceVisibility('currentBalanceValue', this)">🙈</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="date-checker-container">
+                <label for="date-checker">Check Older Logs:</label>
+                <input type="date" id="date-checker">
+                <button onclick="loadDataByDate()" class="save-button">Load Data</button>
+                <button id="back-to-today-btn" onclick="loadToday()" style="display: none;">Back to Today</button>
+                <button id="track-data-btn" class="import-button">Statistics</button>
+                <div id="highest-business-display" onclick="loadHighestBusinessDate()">Highest Business: ₹ 0</div>
+            </div>
+            
+            <div class="button-container">
+                <div class="button-group">
+                    <button class="reset-button" id="reset-data-button" onclick="resetAllData()">Reset Log</button>
+                    <button class="settings-button" id="settings-button">⚙️ Settings</button>
+                    <span id="autosave-status">Auto-save on</span>
+                </div>
+            </div>
+            <table>
+                <thead> <tr> <th>O.BALANCE</th> <th>S NO.</th> <th>ID NO.</th> <th>P TYPE</th> <th>AMOUNT</th> </tr> </thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+  
+  <div id="report-selection-overlay" class="modal-overlay">
+    <div id="report-selection-box" class="modal-box">
+      <p>Which report would you like to generate?</p>
+      <div class="modal-buttons">
+        <button id="select-current-month">Current Month</button>
+        <button id="select-all-months">All Months</button>
+        <button id="select-custom-month">Custom Selection</button>
+        <button id="select-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="custom-confirm-overlay" class="modal-overlay">
+    <div id="custom-confirm-box" class="modal-box">
+      <p id="custom-confirm-message">Are you sure?</p>
+      <div class="modal-buttons"> <button id="confirm-yes">Yes</button> <button id="confirm-no">No</button> </div>
+    </div>
+  </div>
+  
+  <div id="custom-month-selection-overlay" class="modal-overlay">
+    <div id="custom-month-selection-box" class="modal-box">
+        <div class="modal-content">
+            <p>Select Months for Report</p>
+            <div id="month-selection-container"></div>
+        </div>
+      <div class="modal-buttons">
+        <button id="generate-custom-report">Generate</button> <button id="cancel-custom-selection">Cancel</button>
+      </div>
+    </div>
+  </div>
+  
+  <div id="id-details-modal" class="modal-overlay">
+      <div class="modal-box">
+          <h3 id="id-details-title" style="color: var(--primary-color); margin-top: 0; font-size: 1.5rem;">Transaction Details</h3>
+          <div id="id-details-summary" style="margin-bottom: 20px; font-size: 1.15rem; font-weight: 500;"></div>
+          <div class="modal-content" id="id-details-content" style="flex-grow: 1;">
+              </div>
+          <div class="modal-buttons">
+              <button id="id-details-close-btn">Close</button>
+          </div>
+      </div>
+  </div>
+
+  <div id="track-data-modal" class="modal-overlay">
+      <div class="modal-box" style="width: 95%; max-width: 1100px; height: 90vh; max-height: 90vh; display: flex; flex-direction: column;">
+          <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px;">
+              <h2 style="margin: 0; color: var(--primary-color); font-size: 1.6rem;">Statistics: AD / AC / TPD</h2>
+              <button id="track-data-close-btn" class="reset-button">BACK</button>
+          </div>
+
+          <div class="modal-filter-controls" style="grid-template-columns: 1fr 1fr 1fr; margin-bottom: 25px;">
+              <select id="track-year-filter"></select>
+              <select id="track-month-filter"></select>
+              <button id="generate-track-report" class="save-button">Show Data</button>
+          </div>
+
+          <div id="track-results-area" style="flex-grow: 1; overflow-y: auto; display: flex; gap: 20px; padding-bottom: 10px;">
+              
+              <div class="track-card">
+                  <h3>AD Type</h3>
+                  <div style="margin-bottom: 20px; text-align: center;">
+                      <div style="font-size: 1rem; color: var(--secondary-color); font-weight: 500;">Total Amount</div>
+                      <div id="track-ad-total" style="font-size: 1.8rem; font-weight: 700; color: var(--green-text);">₹ 0</div>
+                      <div style="font-size: 0.9rem; margin-top: 8px; color: var(--secondary-color);">Count: <span id="track-ad-count" style="font-weight: bold; color: var(--text-color);">0</span></div>
+                  </div>
+                  <div id="track-ad-list" style="flex-grow: 1; overflow-y: auto; border-top: 1px solid var(--border-color);"></div>
+              </div>
+
+              <div class="track-card">
+                  <h3>AC Type</h3>
+                  <div style="margin-bottom: 20px; text-align: center;">
+                      <div style="font-size: 1rem; color: var(--secondary-color); font-weight: 500;">Total Amount</div>
+                      <div id="track-ac-total" style="font-size: 1.8rem; font-weight: 700; color: var(--red-text);">₹ 0</div>
+                      <div style="font-size: 0.9rem; margin-top: 8px; color: var(--secondary-color);">Count: <span id="track-ac-count" style="font-weight: bold; color: var(--text-color);">0</span></div>
+                  </div>
+                  <div id="track-ac-list" style="flex-grow: 1; overflow-y: auto; border-top: 1px solid var(--border-color);"></div>
+              </div>
+
+              <div class="track-card">
+                  <h3>TPD (TAC)</h3>
+                  <div style="margin-bottom: 20px; text-align: center;">
+                      <div style="font-size: 1rem; color: var(--secondary-color); font-weight: 500;">Total Amount</div>
+                      <div id="track-tac-total" style="font-size: 1.8rem; font-weight: 700; color: var(--red-text);">₹ 0</div>
+                      <div style="font-size: 0.9rem; margin-top: 8px; color: var(--secondary-color);">Count: <span id="track-tac-count" style="font-weight: bold; color: var(--text-color);">0</span></div>
+                  </div>
+                  <div id="track-tac-list" style="flex-grow: 1; overflow-y: auto; border-top: 1px solid var(--border-color);"></div>
+              </div>
+          </div>
+      </div>
+  </div>
+
+  <div id="settings-modal" class="modal-overlay">
+      <div class="modal-box" style="width: 560px;">
+          <h2 style="margin: 0 0 10px 0; color: var(--primary-color); font-size: 1.6rem;">⚙️ Settings</h2>
+          <div class="modal-content">
+              <div class="settings-section">
+                  <h3>Data</h3>
+                  <div class="modal-buttons">
+                      <button class="export-button" onclick="exportAllData()">Export All</button>
+                      <button class="import-button" onclick="document.getElementById('import-file-input').click()">Import</button>
+                      <input type="file" id="import-file-input" style="display: none;" onchange="importData(event)" accept=".json">
+                      <button class="report-button" onclick="openReportFromSettings()">Report</button>
+                  </div>
+              </div>
+              <hr>
+              <div class="settings-section">
+                  <h3>Backend / Cloud Sync</h3>
+                  <div id="backend-status">Offline — local only</div>
+                  <label for="firebase-config-input">Firebase config (JSON)</label>
+                  <textarea id="firebase-config-input" placeholder='Paste your Firebase web config JSON here, e.g. {"apiKey": "...", "authDomain": "...", "projectId": "...", "storageBucket": "...", "messagingSenderId": "...", "appId": "..."}'></textarea>
+                  <div class="modal-buttons">
+                      <button id="firebase-connect-btn" class="import-button">Connect Firebase</button>
+                  </div>
+                  <label for="api-base-input">Custom API URL (MongoDB server option)</label>
+                  <input type="text" id="api-base-input" placeholder="e.g. http://localhost:3000">
+                  <div class="settings-hint">When set, the app syncs with your own server instead of Firebase. A Google Sheets URL (below) takes priority over this. Leave both empty to use Firebase (if connected) or local-only mode.</div>
+                  <label for="sheets-url-input">Google Sheets Web App URL</label>
+                  <input type="text" id="sheets-url-input" placeholder="e.g. https://script.google.com/macros/s/.../exec">
+                  <div class="settings-hint">Apps Script deploy karne ke baad mila URL yahan paste karo. Jab set ho, app Google Sheets se sync karegi — koi server chalane ki zaroorat nahi. Setup guide: Google-Sheets-Setup.txt</div>
+                  <div class="modal-buttons">
+                      <button id="sheets-connect-btn" class="import-button">Connect Google Sheets</button>
+                  </div>
+                  <div class="modal-buttons">
+                      <button id="api-base-save-btn" class="import-button">Save API URL</button>
+                      <button id="sync-now-btn" class="export-button">Sync Now</button>
+                  </div>
+              </div>
+          </div>
+          <div class="modal-buttons">
+              <button id="settings-close-btn">Close</button>
+          </div>
+      </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
