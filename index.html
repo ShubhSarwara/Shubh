@@ -33,7 +33,6 @@
             <div id="monthlyBusiness" class="monthly-summary">
                 Monthly Business: 
                 <span id="monthlyBusinessValue">₹ 0</span> 
-                <span class="toggle-visibility" onclick="toggleBalanceVisibility('monthlyBusinessValue', this)">🙈</span>
             </div>
             <div id="monthlyTransactions" class="monthly-summary">Monthly Transactions: 0</div>
             </div>
@@ -82,7 +81,6 @@
                         <div class="current-balance" id="currentBalanceDisplay">
                             Current Balance: 
                             <span id="currentBalanceValue">₹ 0</span>
-                            <span class="toggle-visibility" onclick="toggleBalanceVisibility('currentBalanceValue', this)">🙈</span>
                         </div>
                     </div>
                 </div>
@@ -101,6 +99,7 @@
                 <div class="button-group">
                     <button class="reset-button" id="reset-data-button" onclick="resetAllData()">Reset Log</button>
                     <button class="settings-button" id="settings-button">⚙️ Settings</button>
+                    <button class="save-button" onclick="saveData()">💾 Save Data</button>
                     <span id="autosave-status">Auto-save on</span>
                 </div>
             </div>
@@ -213,6 +212,7 @@
                       <button class="import-button" onclick="document.getElementById('import-file-input').click()">Import</button>
                       <input type="file" id="import-file-input" style="display: none;" onchange="importData(event)" accept=".json">
                       <button class="report-button" onclick="openReportFromSettings()">Report</button>
+                      <button class="reset-button" onclick="deleteAllLocalData()">Delete All (This Device)</button>
                   </div>
               </div>
               <hr>
@@ -224,17 +224,12 @@
                   <div class="modal-buttons">
                       <button id="firebase-connect-btn" class="import-button">Connect Firebase</button>
                   </div>
-                  <label for="api-base-input">Custom API URL (MongoDB server option)</label>
-                  <input type="text" id="api-base-input" placeholder="e.g. http://localhost:3000">
-                  <div class="settings-hint">When set, the app syncs with your own server instead of Firebase. A Google Sheets URL (below) takes priority over this. Leave both empty to use Firebase (if connected) or local-only mode.</div>
                   <label for="sheets-url-input">Google Sheets Web App URL</label>
                   <input type="text" id="sheets-url-input" placeholder="e.g. https://script.google.com/macros/s/.../exec">
-                  <div class="settings-hint">Apps Script deploy karne ke baad mila URL yahan paste karo. Jab set ho, app Google Sheets se sync karegi — koi server chalane ki zaroorat nahi. Setup guide: Google-Sheets-Setup.txt</div>
                   <div class="modal-buttons">
                       <button id="sheets-connect-btn" class="import-button">Connect Google Sheets</button>
                   </div>
                   <div class="modal-buttons">
-                      <button id="api-base-save-btn" class="import-button">Save API URL</button>
                       <button id="sync-now-btn" class="export-button">Sync Now</button>
                   </div>
               </div>
