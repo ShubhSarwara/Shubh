@@ -57,86 +57,28 @@
       --shadow-color: rgba(59, 130, 246, 0.15);
     }
     
-    /* Theme 2: Deep Ocean */
-    html[data-theme="deep-ocean"] {
-      --primary-color: #06b6d4;     
-      --green-text: #34d399;         
-      --red-text: #fb7185;           
-      --shadow-color: rgba(6, 182, 212, 0.3);
-      --export-bg: #0d9488;         
-      --import-bg: #0ea5e9;         
-      --save-color: #eab308;         
-      --reset-color: #f43f5e;        
-      --copy-color: #94a3b8;
-      --report-color: #059669;       
-      --frequency-color: #6366f1;       
+    /* Theme 2: Golden Hour */
+    html[data-theme="golden-hour"] {
+      --primary-color: #f59e0b;
+      --green-text: #4ade80;
+      --red-text: #fb7185;
+      --shadow-color: rgba(245, 158, 11, 0.3);
+      --export-bg: #d97706;
+      --import-bg: #f59e0b;
+      --save-color: #eab308;
+      --reset-color: #dc2626;
+      --copy-color: #a8a29e;
+      --report-color: #b45309;
+      --frequency-color: #ea580c;
+      --highest-business-color: #fde047;
     }
-    html[data-theme-mode="light"][data-theme="deep-ocean"] {
+    html[data-theme-mode="light"][data-theme="golden-hour"] {
+      --primary-color: #d97706;
       --green-text: #059669;
-      --red-text: #e11d48;
-    }
-
-    /* Theme 3: Crimson Night */
-    html[data-theme="crimson-night"] {
-      --primary-color: #f43f5e;     
-      --green-text: #6ee7b7;         
-      --red-text: #f87171;           
-      --shadow-color: rgba(244, 63, 94, 0.3);
-      --export-bg: #ec4899;         
-      --import-bg: #a855f7;         
-      --save-color: #f97316;         
-      --reset-color: #9f1239;        
-      --copy-color: #64748b;
-      --report-color: #be123c;       
-      --frequency-color: #7e22ce;       
-      --highest-business-color: #fde047; 
-    }
-    html[data-theme-mode="light"][data-theme="crimson-night"] {
-      --green-text: #059669;
+      --red-text: #dc2626;
       --highest-business-color: #d97706;
     }
-    
-    /* Theme 4: Forest Haze */
-    html[data-theme="forest-haze"] {
-      --primary-color: #84cc16;     
-      --green-text: #84cc16;         
-      --red-text: #f97316;           
-      --shadow-color: rgba(132, 204, 22, 0.3);
-      --export-bg: #22c55e;         
-      --import-bg: #14b8a6;         
-      --save-color: #eab308;         
-      --reset-color: #ea580c;        
-      --copy-color: #a8a29e;         
-      --report-color: #4d7c0f;       
-      --frequency-color: #78350f;       
-    }
-    html[data-theme-mode="light"][data-theme="forest-haze"] {
-      --primary-color: #65a30d;
-      --green-text: #059669;
-      --red-text: #dc2626;
-    }
 
-    /* Theme 5: Royal Purple */
-    html[data-theme="royal-purple"] {
-      --primary-color: #a855f7;     
-      --green-text: #a3e635;         
-      --red-text: #f472b6;           
-      --shadow-color: rgba(168, 85, 247, 0.3);
-      --export-bg: #8b5cf6;         
-      --import-bg: #6366f1;         
-      --save-color: #fde047;         
-      --reset-color: #e11d48;        
-      --copy-color: #94a3b8;
-      --report-color: #7c3aed;       
-      --frequency-color: #db2777;       
-      --highest-business-color: #a3e635;
-    }
-    html[data-theme-mode="light"][data-theme="royal-purple"] {
-      --green-text: #059669;
-      --red-text: #dc2626;
-      --highest-business-color: #059669;
-    }
-    
     /* --- CUSTOM SCROLLBAR --- */
     ::-webkit-scrollbar {
       width: 10px;
@@ -286,7 +228,6 @@
         box-shadow: 0 0 0 3px var(--shadow-color);
         outline: none;
     }
-    #api-base-input { width: 100%; box-sizing: border-box; }
     #sheets-url-input { width: 100%; box-sizing: border-box; }
     .settings-hint {
         font-size: 0.85rem;
@@ -470,7 +411,6 @@
     .details-cell a:hover { opacity: 0.7; text-decoration: underline; }
 
     /* --- VISIBILITY TOGGLE --- */
-    .toggle-visibility { cursor: pointer; margin-left: 10px; font-size: 1.2rem; user-select: none; display: inline-block; transition: transform 0.2s; opacity: 0.7; }
     .toggle-visibility:hover { transform: scale(1.1); opacity: 1; }
     .toggle-visibility:active { transform: scale(0.9); }
     .is-hidden { font-family: monospace; letter-spacing: 2px; color: var(--secondary-color); opacity: 0.7; }
