@@ -390,7 +390,7 @@
   // ===============================================
   // START: NEW THEME SWITCHER
   // ===============================================
-  const themes = ['vibrant-dark', 'deep-ocean', 'crimson-night', 'forest-haze', 'royal-purple'];
+  const themes = ['vibrant-dark', 'golden-hour'];
   let currentThemeIndex = 0;
   let isLightMode = false;
 
@@ -459,39 +459,11 @@
       };
   }
 
-  let balanceVisibility = {
-      monthlyBusinessValue: false,
-      currentBalanceValue: false
-  };
-
-  function toggleBalanceVisibility(targetId, iconElement) {
-      playSound();
-      balanceVisibility[targetId] = !balanceVisibility[targetId];
-      const targetElement = document.getElementById(targetId);
-      if (!targetElement) return;
-      const originalValue = targetElement.dataset.originalValue || '₹ 0';
-
-      if (balanceVisibility[targetId]) {
-          targetElement.textContent = originalValue;
-          iconElement.textContent = '👁️';
-          targetElement.classList.remove('is-hidden');
-      } else {
-          targetElement.dataset.originalValue = originalValue;
-          targetElement.textContent = '∗∗∗∗∗∗∗';
-          iconElement.textContent = '🙈';
-          targetElement.classList.add('is-hidden');
-      }
-  }
-
+  // Balances are always shown — the hide/show (monkey) toggle was removed.
   function updateMaskableBalance(targetId, newValue) {
       const targetElement = document.getElementById(targetId);
       if (!targetElement) return;
-      targetElement.dataset.originalValue = newValue;
-      if (balanceVisibility[targetId]) {
-          targetElement.textContent = newValue;
-      } else {
-          targetElement.textContent = '∗∗∗∗∗∗∗';
-      }
+      targetElement.textContent = newValue;
   }
 
 
@@ -1149,6 +1121,30 @@
         saveData(false);
         updateCalculations();
         showToast('Log has been reset. Opening balance kept.');
+    });
+  }
+
+  // Delete EVERY day's log stored in THIS browser only (all dates). Used
+  // for a clean fresh start. Connection settings (Sheets URL, Firebase
+  // config, API URL) are kept. The cloud copy (Google Sheet / Firebase)
+  // is NOT touched — clear it separately if you want a full reset. Does
+  // not pull from the cloud afterwards, so deleted data cannot come back
+  // on this device until the next Sync Now.
+  function deleteAllLocalData() {
+    const message = 'Are you sure you want to delete ALL logs on THIS device (every date)? This cannot be undone. Your Google Sheet is not affected.';
+    showCustomConfirm(message, () => {
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('balanceSheetData_')) keys.push(key);
+        }
+        keys.forEach(k => localStorage.removeItem(k));
+        try { localStorage.removeItem(SYNC_META_KEY); } catch (e) { /* ignore */ }
+        playSound();
+        closeSettings();
+        calculateAndSetInitialHighestBusiness();
+        loadDataByDate(true);
+        showToast('All data deleted from this device.');
     });
   }
 
