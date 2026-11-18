@@ -3,21 +3,21 @@
   // ===============================================
   // Backend priority: Google Sheets URL (Settings) > Custom API URL
   // (Settings) > Firebase config > local-only mode.
-  // PLACEHOLDER — replace the values below with your own Firebase web
-  // config, OR paste the config JSON in Settings (stored in this browser's
-  // localStorage under "businessSuiteFirebaseConfig"). You can also set
-  // window.BUSINESS_SUITE_FIREBASE_CONFIG before this script runs.
+  // Wired to the user's Firebase project (balance-suite-775da). You can
+  // still override it by pasting a config JSON in Settings (stored in this
+  // browser's localStorage under "businessSuiteFirebaseConfig"), or by
+  // setting window.BUSINESS_SUITE_FIREBASE_CONFIG before this script runs.
   // Firebase web config values are public-by-design; protect your data with
   // Firestore security rules. NEVER paste private service-account keys here.
   // If no real config is present, the app works exactly as before on
   // localStorage only and shows "Offline — local only".
   const FIREBASE_CONFIG = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
+    apiKey: "AIzaSyB5ySrQPFLvH_BxDTE8WYY3W-1ZwzZtyVw",
+    authDomain: "balance-suite-775da.firebaseapp.com",
+    projectId: "balance-suite-775da",
+    storageBucket: "balance-suite-775da.firebasestorage.app",
+    messagingSenderId: "619616496610",
+    appId: "1:619616496610:web:0c47f3176c7a1da0ce27bb"
   };
   const FIREBASE_CONFIG_KEY = 'businessSuiteFirebaseConfig';
   const API_BASE_KEY = 'businessSuiteApiBase';
