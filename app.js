@@ -84,6 +84,23 @@
     return 0;
   }
 
+  // Google Sheets sometimes stores a "YYYY-MM-DD" date as a real date
+  // value; the Apps Script then returns it as a long string like
+  // "Wed Nov 18 2026 00:00:00 GMT+0530 (India Standard Time)". The app
+  // stores logs under 'balanceSheetData_YYYY-MM-DD', so a mangled date
+  // would file the cloud data under a key the app never reads — sync
+  // reports success but nothing shows. Normalise any such date back to
+  // YYYY-MM-DD. Already-clean dates pass through unchanged.
+  function normalizeCloudDate(raw) {
+    if (!raw) return raw;
+    const s = String(raw).trim();
+    if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+    const d = new Date(s);
+    if (isNaN(d.getTime())) return s;
+    const p = n => String(n).padStart(2, '0');
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+  }
+
   // Google Sheets backend: talks to a Google Apps Script web app deployed
   // from the user's Sheet (see google-sheets/Code.gs). IMPORTANT: only
   // plain GET requests with query parameters are used — Apps Script web
@@ -109,7 +126,7 @@
       const json = await this.call({ action: 'list' });
       const logs = Array.isArray(json.logs) ? json.logs : [];
       return logs.map(l => ({
-        date: l.date,
+        date: normalizeCloudDate(l.date),
         data: Array.isArray(l.data) ? l.data : [],
         updatedAtMs: l.updatedAt ? toMillis(l.updatedAt) : 0
       }));
@@ -117,7 +134,7 @@
     async getLog(dateStr) {
       const json = await this.call({ action: 'get', date: dateStr });
       if (!json || !Array.isArray(json.data)) return null;
-      return { date: json.date, data: json.data, updatedAtMs: json.updatedAt ? toMillis(json.updatedAt) : 0 };
+      return { date: normalizeCloudDate(json.date), data: json.data, updatedAtMs: json.updatedAt ? toMillis(json.updatedAt) : 0 };
     },
     async saveLog(dateStr, tableData) {
       const json = await this.call({ action: 'save', date: dateStr, data: JSON.stringify(tableData) });
@@ -261,9 +278,11 @@
     });
   }
 
-  // Pull cloud logs and merge into localStorage. Cloud wins for a date when
-  // there is no local log yet, when the local log has no transactions, or
-  // when the cloud copy is newer than that date's last sync time. Returns
+  // Pull cloud logs and merge into localStorage. A cloud log with real
+  // transactions wins for a date when there is no local log yet, when the
+  // local log has no transactions, or when the cloud copy is newer than
+  // that date's last sync time. A cloud log with NO transactions never
+  // overwrites local data. Returns
   // the number of days merged, or -1 if the cloud could not be reached at
   // all. Never throws.
   async function pullCloudLogs() {
@@ -283,7 +302,12 @@
         const cloudHasData = logHasTransactions(log.data);
         const lastSyncMs = meta[log.date] ? toMillis(meta[log.date]) : 0;
         const cloudIsNewer = !!meta[log.date] && log.updatedAtMs > 0 && log.updatedAtMs > lastSyncMs;
-        if ((!localHasData && cloudHasData) || cloudIsNewer) {
+        // An empty cloud log must NEVER overwrite a local log that has
+        // transactions — even when it is newer. (Browsing a date on one
+        // device creates an empty local log for it; syncing that device
+        // then pushes the empty log to the cloud, and a plain "cloud is
+        // newer" check would wipe the good data on the other device.)
+        if (cloudHasData && (!localHasData || cloudIsNewer)) {
           localStorage.setItem(key, JSON.stringify(log.data));
           meta[log.date] = new Date(log.updatedAtMs || Date.now()).toISOString();
           merged++;
